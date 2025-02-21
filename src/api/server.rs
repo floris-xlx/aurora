@@ -66,11 +66,7 @@ async fn serve_static_files(path: web::Path<String>) -> impl Responder {
 
     NamedFile::open_async(file_path).await.unwrap()
 }
-
-#[actix_web::main]
-async fn main() -> Result<()> {
-    init_tracing();
-
+pub async fn api() -> Result<()> {
     dotenv().ok();
     let port: u16 = var("API_XYLEX_CLOUD_PORT")
         .unwrap_or("7777".to_string())
