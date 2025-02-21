@@ -1,7 +1,7 @@
 pub mod headers;
 
 use anyhow::{Context, Result};
-use csv::{Reader, ReaderBuilder, StringRecord};
+use csv::{Reader, ReaderBuilder};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs::File;
