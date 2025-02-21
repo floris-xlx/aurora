@@ -14,20 +14,36 @@ Aurora is a powerful document processing engine that transforms a wide range of 
 Aurora supports and optimizes the following document formats and financial institutions:
 
 ### ✅ Supported Banks and Formats
-
-| Bank/Service            | Formats/Types                          |
-|-------------------------|----------------------------------------|
-| **ABN AMRO**            | Business, Personal (CSV, PDF, MT940, TXT250, XLX250) |
-| **Bunq**                | Business                               |
-| **ING**                 | Personal, Business                     |
-| **Invoice2go**          |                                        |
-| **Swedbank (SE)**       |                                        |
-| **Shopify Orders**      |                                        |
-| **Revolut**             | Personal, Business                     |
-| **Knab**                |                                        |
-| **Stripe**              | Receipts, Invoices                     |
-| **BeoBank (BE)**        |                                        |
-| **BNP Paribas Fortis (BE)** |                                    |
+❌⏳
+| Bank/Service            | Target    | Formats/Types         |  Status        |
+|-------------------------|-----------|-----------------------|----------------|
+| **ABN AMRO**            | Business  | CSV                   | ❌               |
+| **ABN AMRO**            | Business  | PDF                   | ❌               |
+| **ABN AMRO**            | Business  | MT940                 | ❌               |
+| **ABN AMRO**            | Business  | TXT250                | ❌               |
+| **ABN AMRO**            | Business  | XLX250                | ❌               |
+| **ABN AMRO**            | Personal  | CSV                   | ❌               |
+| **ABN AMRO**            | Personal  | PDF                   | ❌               |
+| **ABN AMRO**            | Personal  | MT940                 | ❌               |
+| **ABN AMRO**            | Personal  | TXT250                | ❌               |
+| **ABN AMRO**            | Personal  | XLX250                | ❌               |
+| **Bunq**                | Business  | PDF                   | ❌               |
+| **ING**                 | Personal  |                       | ❌               |
+| **ING**                 | Business  |                       | ❌               |
+| **Invoice2go**          |           |                       | ❌               |
+| **Swedbank (SE)**       |           |                       | ❌               |
+| **Shopify Orders**      |           |                       | ❌               |
+| **Revolut**             | Personal  | CSV                   | ✅               |
+| **Revolut**             | Personal  | PDF                   | ❌               |
+| **Revolut**             | Business  |                       | ❌               |
+| **Knab**                |           |                       | ❌               |
+| **Stripe**              | Receipts  |                       | ❌               |
+| **Stripe**              | Invoices  |                       | ❌               |
+| **BeoBank (BE)**        |           |                       | ❌               |
+| **BNP Paribas Fortis (BE)** |       |                       | ❌               |
+| **Nationwide (UK)**     |           |                       | ❌               |
+| **Halifax (UK)**        |           |                       | ❌               |
+| **Sparkasse (DE)**      |           |                       | ❌               |
 
 ### 📌 Upcoming Coverage
 
