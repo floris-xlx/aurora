@@ -51,6 +51,7 @@ To run this project, you will need to add the following environment variables to
 
 - `AURORA_SCRIPT_DIR` - Optional, if you are extending Aurora with custom implementations but don't want to alter the source code 
 - `POSTGRES_CONNECTION_STRING` - any postgres string will work 
+- `AURORA_API_PORT` - Defaults to 7777, exposes the `Actix-Web` Rest api
 
 ## Build Aurora (Ubuntu 24.xx)
 
