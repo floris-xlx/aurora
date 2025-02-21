@@ -1,12 +1,16 @@
+pub mod headers;
+
 use anyhow::{Context, Result};
-use csv::Reader;
-use csv::ReaderBuilder;
-use serde_json::json;
-use serde_json::Value;
+use csv::{ReaderBuilder, Reader, StringRecord};
+use serde_json::{Value, json};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::Path;
 use tracing::{error, info};
+
+// crate imports
+use crate::parser::csv::headers::normalize_headers;
 
 pub async fn csv_to_json(filepath: &str) -> Result<Value> {
     let path: &Path = Path::new(filepath);
@@ -28,12 +32,20 @@ pub async fn csv_to_json(filepath: &str) -> Result<Value> {
     info!("CSV reader created for file: {}", filepath);
 
     // Convert CSV to JSON
+    let headers: csv::StringRecord = csv_reader
+        .headers()
+        .context("Failed to read headers")?
+        .clone();
+    let normalized_headers: csv::StringRecord = normalize_headers(&headers);
     let mut records: Vec<Value> = vec![];
     for result in csv_reader.records() {
         match result {
             Ok(record) => {
-                let json_record: Value = json!(record.iter().collect::<Vec<&str>>());
-                records.push(json_record);
+                let mut json_record: HashMap<String, String> = HashMap::new();
+                for (header, field) in normalized_headers.iter().zip(record.iter()) {
+                    json_record.insert(header.to_string(), field.to_string());
+                }
+                records.push(json!(json_record));
             }
             Err(e) => {
                 error!("Error reading record: {}", e);

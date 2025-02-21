@@ -27,7 +27,7 @@ async fn download_file(file_url: web::Json<FileUrl>) -> impl Responder {
                 "status": "success",
                 "message": format!("File downloaded to {}", file_path),
                 "file_name": uuid,
-                "file_path": file_path 
+                "file_path": file_path
             }))
         }
         Err(e) => {
@@ -49,9 +49,16 @@ async fn download_to_cache(url: &str, uuid: &str) -> Result<String, Box<dyn std:
         .and_then(|v| v.parse().ok())
         .unwrap_or(mime::APPLICATION_OCTET_STREAM);
 
-    let ext = mime_guess::get_mime_extensions_str(mime_type.as_ref())
-        .and_then(|exts| exts.first())
-        .unwrap_or(&"bin");
+    // Check if the URL already has a file extension
+    let url_extension: Option<&str> = url.split('.').last().filter(|ext| !ext.contains('/'));
+
+    let ext = if let Some(ext) = url_extension {
+        ext
+    } else {
+        mime_guess::get_mime_extensions_str(mime_type.as_ref())
+            .and_then(|exts| exts.first())
+            .unwrap_or(&"bin")
+    };
 
     let file_path: String = format!("./cache/{}.{}", uuid, ext);
     let mut file: File = File::create(&file_path)?;
