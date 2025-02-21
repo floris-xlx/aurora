@@ -53,9 +53,9 @@ async fn download_to_cache(url: &str, uuid: &str) -> Result<String, Box<dyn std:
         .and_then(|exts| exts.first())
         .unwrap_or(&"bin");
 
-    let file_path = format!("./cache/{}.{}", uuid, ext);
-    let mut file = File::create(&file_path)?;
-    let mut content = response.bytes().await?;
+    let file_path: String = format!("./cache/{}.{}", uuid, ext);
+    let mut file: File = File::create(&file_path)?;
+    let mut content: web::Bytes = response.bytes().await?;
     copy(&mut content.as_ref(), &mut file)?;
     Ok(file_path)
 }

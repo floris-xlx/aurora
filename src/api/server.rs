@@ -3,7 +3,7 @@ use actix_web::body::{BoxBody, EitherBody};
 use actix_web::dev::Service;
 use actix_web::dev::ServiceResponse;
 use actix_web::http::header;
-use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, web::Json, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use dotenv::dotenv;
 use moka::future::Cache;
 use reqwest::{get, Client, Error, Response};
@@ -44,7 +44,7 @@ async fn status() -> impl Responder {
 }
 
 #[post("/")]
-async fn process_file(file_url: web::Json<FileUrl>) -> impl Responder {
+async fn process_file(file_url: Json<FileUrl>) -> impl Responder {
     let port: u16 = get_api_port();
 
     let client: Client = Client::new();
