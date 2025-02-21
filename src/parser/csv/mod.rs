@@ -10,6 +10,7 @@ use std::path::Path;
 use tracing::{error, info};
 
 // crate imports
+use crate::parser::caster::number::cast_keys_to_f64;
 use crate::parser::csv::headers::normalize_headers;
 
 pub async fn csv_to_json(filepath: &str) -> Result<Value> {
@@ -60,6 +61,8 @@ pub async fn convert_csv_reader_to_json<R: Read>(reader: R) -> Result<Value> {
         }
     }
 
+    let casted_records: Value = cast_keys_to_f64(&mut json!(records));
+
     info!("Successfully converted CSV to JSON");
-    Ok(json!(records))
+    Ok(json!(casted_records))
 }
