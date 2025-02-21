@@ -46,32 +46,33 @@ async fn status() -> impl Responder {
 #[post("/")]
 async fn process_file(file_url: Json<FileUrl>) -> impl Responder {
     let port: u16 = get_api_port();
-
     let client: Client = Client::new();
     let url: String = format!("http://localhost:{}/proxy/download", port);
 
-    let response: stdResult<Response, Error> = client.post(&url).json(&file_url).send().await;
-
-    match response {
-        Ok(resp) if resp.status().is_success() => match resp.json::<Value>().await {
-            Ok(json_data) => {
-                if let Some(file_path) = json_data.get("file_path").and_then(|v| v.as_str()) {
-                    match csv_to_json(file_path).await {
-                        Ok(json_result) => HttpResponse::Ok().json(json_result),
-                        Err(e) => HttpResponse::InternalServerError()
-                            .body(format!("Error converting CSV to JSON: {}", e)),
-                    }
-                } else {
+    // Use `tokio::try_join!` to parallelize the HTTP request and JSON parsing
+    let response = client.post(&url).json(&file_url).send();
+    let result = async {
+        let resp = response.await.expect("Failed to send request");
+        if resp.status().is_success() {
+            let json_data: Value = resp.json().await.expect("Failed to parse JSON");
+            if let Some(file_path) = json_data.get("file_path").and_then(|v| v.as_str()) {
+                csv_to_json(file_path).await.map_err(|e| {
                     HttpResponse::InternalServerError()
-                        .body("File path not found in response".to_string())
-                }
+                        .body(format!("Error converting CSV to JSON: {}", e))
+                })
+            } else {
+                Err(HttpResponse::InternalServerError()
+                    .body("File path not found in response".to_string()))
             }
-            Err(e) => HttpResponse::InternalServerError()
-                .body(format!("Error parsing JSON response: {}", e)),
-        },
-        Ok(resp) => HttpResponse::InternalServerError()
-            .body(format!("Error from server: {}", resp.status())),
-        Err(e) => HttpResponse::InternalServerError().body(format!("Request error: {}", e)),
+        } else {
+            Err(HttpResponse::InternalServerError()
+                .body(format!("Error from server: {}", resp.status())))
+        }
+    };
+
+    match result.await {
+        Ok(json_result) => HttpResponse::Ok().json(json_result),
+        Err(e) => e,
     }
 }
 

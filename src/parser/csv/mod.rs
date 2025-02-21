@@ -5,7 +5,7 @@ use csv::{ReaderBuilder, Reader, StringRecord};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{BufReader, Read};
 use std::path::Path;
 use tracing::{error, info};
 
@@ -27,9 +27,14 @@ pub async fn csv_to_json(filepath: &str) -> Result<Value> {
     let reader: BufReader<File> = BufReader::new(file);
     info!("File opened successfully: {}", filepath);
 
+    // Delegate to the conversion function
+    convert_csv_reader_to_json(reader).await
+}
+
+pub async fn convert_csv_reader_to_json<R: Read>(reader: R) -> Result<Value> {
     // Create a CSV reader
-    let mut csv_reader: Reader<BufReader<File>> = ReaderBuilder::new().from_reader(reader);
-    info!("CSV reader created for file: {}", filepath);
+    let mut csv_reader: Reader<R> = ReaderBuilder::new().from_reader(reader);
+    info!("CSV reader created");
 
     // Convert CSV to JSON
     let headers: csv::StringRecord = csv_reader
@@ -54,6 +59,6 @@ pub async fn csv_to_json(filepath: &str) -> Result<Value> {
         }
     }
 
-    info!("Successfully converted CSV to JSON for file: {}", filepath);
+    info!("Successfully converted CSV to JSON");
     Ok(json!(records))
 }
