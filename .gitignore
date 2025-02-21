@@ -21,3 +21,12 @@ Cargo.lock
 #.idea/
 
 .env
+
+*.pdf
+*.csv
+*.xlsx
+*.xls
+*.docx
+*.doc
+*.pptx
+*.ppt
