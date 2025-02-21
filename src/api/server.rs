@@ -5,17 +5,20 @@ use actix_web::dev::ServiceResponse;
 use actix_web::http::header;
 use actix_web::{get, post, web, web::Json, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use dotenv::dotenv;
+use mime_guess::mime;
 use moka::future::Cache;
 use reqwest::{get, Client, Error, Response};
 use serde_json::{json, Value};
 use std::env::var;
+use std::io::Cursor;
 use std::io::Result;
 use std::result::Result as stdResult;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::fs::File;
 use tokio::sync::Mutex;
-
 use tracing_subscriber::EnvFilter;
+use uuid::Uuid;
 use web::Data;
 
 // config
@@ -47,43 +50,69 @@ async fn status() -> impl Responder {
 
 #[post("/")]
 async fn process_file(file_url: Json<FileUrl>) -> impl Responder {
-    let port: u16 = get_api_port();
     let client: Client = Client::new();
-    let url: String = format!("http://localhost:{}/proxy/download", port);
+    let url: String = file_url.file_url.clone();
+    let uuid: String = Uuid::new_v4().to_string();
 
-    // Use `tokio::try_join!` to parallelize the HTTP request and JSON parsing
-    let response = client.post(&url).json(&file_url).send();
-    let result = async {
-        let resp: Response = response.await.expect("Failed to send request");
-        if resp.status().is_success() {
-            let json_data: Value = resp.json().await.expect("Failed to parse JSON");
-            if let Some(file_path) = json_data.get("file_path").and_then(|v| v.as_str()) {
-                // Read the file into a bytestream
-                match read_file_to_bytestream(file_path).await {
-                    Ok(bytestream) => {
-                        // Convert the bytestream to JSON
-                        let reader: std::io::Cursor<Vec<u8>> = std::io::Cursor::new(bytestream);
-                        convert_csv_reader_to_json(reader).await.map_err(|e| {
-                            HttpResponse::InternalServerError()
-                                .body(format!("Error converting CSV to JSON: {}", e))
-                        })
-                    }
-                    Err(e) => Err(HttpResponse::InternalServerError()
-                        .body(format!("Error reading file to bytestream: {}", e))),
-                }
+    match client.get(&url).send().await {
+        Ok(response) if response.status().is_success() => {
+            let mime_type = response
+                .headers()
+                .get("content-type")
+                .and_then(|v| v.to_str().ok())
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+
+            let url_extension: Option<&str> = url.split('.').last().filter(|ext| !ext.contains('/'));
+
+            let ext: &str = if let Some(ext) = url_extension {
+                ext
             } else {
-                Err(HttpResponse::InternalServerError()
-                    .body("File path not found in response".to_string()))
-            }
-        } else {
-            Err(HttpResponse::InternalServerError()
-                .body(format!("Error from server: {}", resp.status())))
-        }
-    };
+                mime_guess::get_mime_extensions_str(mime_type.as_ref())
+                    .and_then(|exts| exts.first())
+                    .unwrap_or(&"bin")
+            };
 
-    match result.await {
-        Ok(json_result) => HttpResponse::Ok().json(json_result),
-        Err(e) => e,
+            let file_path: String = format!("./cache/{}.{}", uuid, ext);
+            let mut file: File = match File::create(&file_path).await {
+                Ok(f) => f,
+                Err(e) => {
+                    return HttpResponse::InternalServerError()
+                        .body(format!("Error creating file: {}", e))
+                }
+            };
+
+            let content: web::Bytes = match response.bytes().await {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    return HttpResponse::InternalServerError()
+                        .body(format!("Error reading response bytes: {}", e))
+                }
+            };
+
+            if let Err(e) = tokio::io::copy(&mut content.as_ref(), &mut file).await {
+                return HttpResponse::InternalServerError()
+                    .body(format!("Error writing to file: {}", e));
+            }
+
+            match read_file_to_bytestream(&file_path).await {
+                Ok(bytestream) => {
+                    let reader = Cursor::new(bytestream);
+                    match convert_csv_reader_to_json(reader).await {
+                        Ok(json_result) => HttpResponse::Ok().json(json_result),
+                        Err(e) => HttpResponse::InternalServerError()
+                            .body(format!("Error converting CSV to JSON: {}", e)),
+                    }
+                }
+                Err(e) => HttpResponse::InternalServerError()
+                    .body(format!("Error reading file to bytestream: {}", e)),
+            }
+        }
+        Ok(response) => HttpResponse::InternalServerError()
+            .body(format!("Error from server: {}", response.status())),
+        Err(e) => {
+            HttpResponse::InternalServerError().body(format!("Failed to send request: {}", e))
+        }
     }
 }
 
