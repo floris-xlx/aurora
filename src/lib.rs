@@ -18,6 +18,58 @@
 //! }
 //! ```
 //!
+//! ## Example response (`Revolut personal CSV`)
+//! This is with the `f64` casting
+//! ```json
+//! [
+//!   {
+//!     "data": {
+//!         "type": "TRANSFER",
+//!         "balance": 100,
+//!         "amount": 50,
+//!         "completed_date": "2024-01-01 01:24:30",
+//!         "currency": "EUR",
+//!         "fee": 0.0,
+//!         "description": "To EUR Pocket",
+//!         "state": "COMPLETED",
+//!         "started_date": "2024-01-01 01:24:30",
+//!         "product": "Savings"
+//!     },
+//!     "document_provider": "Revolut"
+//!   },
+//!   {
+//!     "data": {
+//!         "type": "TRANSFER",
+//!         "product": "Savings",
+//!         "currency": "EUR",
+//!         "state": "COMPLETED",
+//!         "amount": 50,
+//!         "started_date": "2024-01-01 09:22:37",
+//!         "description": "To EUR Pocket",
+//!         "balance": 500,
+//!         "fee": 0.0,
+//!         "completed_date": "2024-01-01 09:22:37"
+//!     },
+//!     "document_provider": "Revolut"
+//!   },
+//!   {
+//!     "data": {
+//!         "balance": 1000,
+//!         "product": "Savings",
+//!         "type": "TRANSFER",
+//!         "description": "To EUR Pocket",
+//!         "started_date": "2024-01-04 13:48:07",
+//!         "fee": 0.0,
+//!         "currency": "EUR",
+//!         "state": "COMPLETED",
+//!         "amount": 1.0,
+//!         "completed_date": "2024-01-04 13:48:07"
+//!     },
+//!     "document_provider": "Revolut"
+//!   }
+//! ]
+//! ```
+//!
 //! ## Document Foundry
 //!
 //! Aurora supports and optimizes the following document formats and financial institutions:
