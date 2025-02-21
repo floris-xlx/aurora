@@ -6,8 +6,10 @@ authors = ["Floris @ floris@xylex.ai"]
 
 [dependencies]
 actix-cors = "0.7.0"
+actix-files = "0.6.6"
 actix-multipart = "0.7.2"
 actix-web = "4.9.0"
+dotenv = "0.15.0"
 iban = "0.1.7"
 lopdf = "0.35.0"
 moka = { version = "0.12.10", features = ["future"] }
