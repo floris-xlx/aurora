@@ -45,6 +45,16 @@ We are continuously expanding our support for new banks and document types, incl
 
 Aurora can be integrated with your existing infrastructure to automatically parse and transform documents. Detailed API documentation and SDK support are available for seamless integration.
 
+## Environment variables
+
+To run this project, you will need to add the following environment variables to your .env file
+
+`AURORA_SCRIPT_DIR` - Optional, if you are extending Aurora with custom implementations but don't want to alter the source code
+`POSTGRES_CONNECTION_STRING` - any postgres string will work 
+
+
+
+## Run Aurora
 ```bash
 # Clone the repository
 git clone https://github.com/floris-xlx/aurora.git
@@ -68,3 +78,6 @@ We welcome contributions! If you'd like to add support for a new document type o
 
 Aurora is licensed under the MIT License.
 
+## Support
+
+For support, email floris@xylex.ai or submit an issue here on github
