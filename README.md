@@ -49,8 +49,8 @@ Aurora can be integrated with your existing infrastructure to automatically pars
 
 To run this project, you will need to add the following environment variables to your .env file
 
-`AURORA_SCRIPT_DIR` - Optional, if you are extending Aurora with custom implementations but don't want to alter the source code
-`POSTGRES_CONNECTION_STRING` - any postgres string will work 
+- `AURORA_SCRIPT_DIR` - Optional, if you are extending Aurora with custom implementations but don't want to alter the source code 
+- `POSTGRES_CONNECTION_STRING` - any postgres string will work 
 
 
 
