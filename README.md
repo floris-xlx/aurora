@@ -65,7 +65,8 @@ On Fedora 30 the additional dependencies can be installed by running:
 On Termux 2019 (Android, Android on Chromebooks) the additional dependencies can be installed by running:
 ```pkg install libclang leptonica-dev tesseract-dev```
 
-## Build Aurora (Windows)
+## Build Aurora (Windows 10)
+I don't know if it works on windows 11, i'd presume so but i can't say
 
 On Windows, this library uses Microsoft's `vcpkg` to provide tesseract.
 
