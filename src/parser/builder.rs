@@ -5,13 +5,10 @@
 //!
 //!
 
-use actix_multipart::form::json;
 use actix_web::{web::Bytes, HttpResponse};
 use serde_json::Value;
 use std::io::Cursor;
 use tracing::info;
-
-use tokio::fs::File;
 
 use crate::parser::csv::convert_csv_reader_to_json;
 use crate::parser::schema::determine_document_provider;
@@ -74,7 +71,12 @@ pub async fn handle_file_path(file_path: &str) -> HttpResponse {
 pub async fn handle_bytestream(content: &Bytes) -> HttpResponse {
     let reader = Cursor::new(content.clone());
     match convert_csv_reader_to_json(reader).await {
-        Ok(json_result) => HttpResponse::Ok().json(json_result),
+        Ok(mut json_result) => {
+            // Assuming `schemas` is available in the context or passed as an argument
+            let schemas: Vec<RevolutPersonalSchema> = vec![]; // Replace with actual schemas
+            let processed_value: Value = process_json_value(&mut json_result, &schemas);
+            HttpResponse::Ok().json(processed_value)
+        }
         Err(e) => {
             HttpResponse::InternalServerError().body(format!("Error converting CSV to JSON: {}", e))
         }

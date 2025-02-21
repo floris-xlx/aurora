@@ -1,4 +1,4 @@
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use std::collections::HashSet;
 use tracing::{info, warn};
 
@@ -52,89 +52,77 @@ pub struct RevolutPersonalSchema {
 ///
 /// # Arguments
 ///
-/// * `object` - A reference to a `serde_json::Value` which is expected to be a JSON object.
+/// * `object` - A reference to a `serde_json::Value` which is expected to be a JSON array of objects.
 /// * `schemas` - A slice of `StructSchema` representing the available struct schemas to match against.
 ///
 /// # Returns
 ///
-/// A `Value` representing the JSON object with an added key "document_provider" indicating the name of the struct that best matches the keys in the object.
+/// A `Value` representing the JSON array with an added key "document_provider" indicating the name of the struct that best matches the keys in the objects.
 pub fn determine_document_provider(object: &Value, schemas: &[RevolutPersonalSchema]) -> Value {
     info!("Determining document provider for object: {:#?}", object);
     let mut result: Value = object.clone();
 
-    if !object.is_object() {
-        warn!("Provided value is not an object. Marking document provider as Unknown.");
-        result.as_object_mut().unwrap().insert(
-            "document_provider".to_string(),
-            Value::String("Unknown".to_string()),
-        );
-        return result;
+    if !object.is_array() {
+        warn!("Provided value is not an array. Marking document provider as Unknown.");
+        return json!([{
+            "document_provider": "Unknown",
+            "data": object
+        }]);
     }
 
-    let obj_map: &Map<String, Value> = object.as_object().unwrap();
     let revolut_keys: HashSet<&str> = SchemaKeys::Revolut.keys();
     let shopify_keys: HashSet<&str> = SchemaKeys::ShopifyOrders.keys();
 
-    // Check if the object contains only the specific keys for Revolut
-    if obj_map
-        .keys()
-        .all(|key| revolut_keys.contains(key.as_str()))
-    {
-        info!("Object matches all Revolut keys.");
-        result.as_object_mut().unwrap().insert(
-            "document_provider".to_string(),
-            Value::String("Revolut".to_string()),
-        );
-        return result;
-    }
+    let mut document_provider: String = "Unknown".to_string();
 
-    // Check if the object contains only the specific keys for ShopifyOrders
-    if obj_map
-        .keys()
-        .all(|key| shopify_keys.contains(key.as_str()))
-    {
-        info!("Object matches all ShopifyOrders keys.");
-        result.as_object_mut().unwrap().insert(
-            "document_provider".to_string(),
-            Value::String("ShopifyOrders".to_string()),
-        );
-        return result;
-    }
-
-    let mut best_match: Option<&RevolutPersonalSchema> = None;
-    let mut max_matches: usize = 0;
-
-    for schema in schemas {
-        let matches: usize = schema
-            .keys
-            .iter()
-            .filter(|key| obj_map.contains_key(*key))
-            .count();
-        info!("Schema '{}' has {} matching keys.", schema.name, matches);
-        if matches > max_matches {
-            max_matches = matches;
-            best_match = Some(schema);
+    if let Some(array) = object.as_array() {
+        for item in array {
+            if let Some(obj_map) = item.as_object() {
+                if obj_map
+                    .keys()
+                    .all(|key| revolut_keys.contains(key.as_str()))
+                {
+                    document_provider = "Revolut".to_string();
+                    break;
+                } else if obj_map
+                    .keys()
+                    .all(|key| shopify_keys.contains(key.as_str()))
+                {
+                    document_provider = "ShopifyOrders".to_string();
+                    break;
+                }
+            }
         }
     }
 
-    // Check all schemas for a complete match
     for schema in schemas {
-        if schema.keys.iter().all(|key| obj_map.contains_key(key)) {
-            info!("Object completely matches schema '{}'.", schema.name);
-            result.as_object_mut().unwrap().insert(
-                "document_provider".to_string(),
-                Value::String(schema.name.clone()),
-            );
-            return result;
+        if let Some(array) = object.as_array() {
+            for item in array {
+                if let Some(obj_map) = item.as_object() {
+                    if schema.keys.iter().all(|key| obj_map.contains_key(key)) {
+                        document_provider = schema.name.clone();
+                        break;
+                    }
+                }
+            }
         }
     }
 
-    let provider_name: String =
-        best_match.map_or("Unknown".to_string(), |schema| schema.name.clone());
-    info!("Best match for document provider is '{}'.", provider_name);
-    result.as_object_mut().unwrap().insert(
-        "document_provider".to_string(),
-        Value::String(provider_name),
-    );
+    info!("Document provider determined: {}", document_provider);
+
+    if let Some(array) = result.as_array_mut() {
+        for item in array {
+            if let Some(obj_map) = item.as_object_mut() {
+                let data_value = obj_map.clone();
+                obj_map.clear();
+                obj_map.insert("data".to_string(), Value::Object(data_value));
+                obj_map.insert(
+                    "document_provider".to_string(),
+                    Value::String(document_provider.clone()),
+                );
+            }
+        }
+    }
+
     result
 }

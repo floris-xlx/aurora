@@ -28,7 +28,6 @@ use crate::api::proxy::route::download_file;
 
 // parser
 use crate::api::proxy::route::FileUrl;
-use crate::parser::builder::handle_file_path;
 use crate::parser::builder::handle_bytestream;
 
 /// Define a type alias for the shared cache
