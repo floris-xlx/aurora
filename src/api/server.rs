@@ -1,18 +1,16 @@
 use actix_cors::Cors;
-use actix_files::NamedFile;
-use actix_web::body::BoxBody;
-use actix_web::body::EitherBody;
+use actix_web::body::{BoxBody, EitherBody};
 use actix_web::dev::Service;
 use actix_web::dev::ServiceResponse;
 use actix_web::http::header;
 use actix_web::{get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
 use dotenv::dotenv;
 use moka::future::Cache;
-
-use serde_json::json;
-use serde_json::Value;
+use reqwest::{get, Client, Error, Response};
+use serde_json::{json, Value};
 use std::env::var;
 use std::io::Result;
+use std::result::Result as stdResult;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::Mutex;
@@ -20,61 +18,65 @@ use tokio::sync::Mutex;
 use tracing_subscriber::EnvFilter;
 use web::Data;
 
+// config
+use crate::config::get_api_port;
+
+// docs
+use crate::api::docs::{redirect_to_docs, serve_docs, serve_static_files};
+
+// proxy
 use crate::api::proxy::route::download_file;
+
+// parser::csv
+use crate::api::proxy::route::FileUrl;
+use crate::parser::csv::csv_to_json;
 
 /// Define a type alias for the shared cache
 pub type SharedCache = Arc<Mutex<Cache<String, Value>>>;
 
 #[get("/")]
 async fn status() -> impl Responder {
-    let status_info = json!({
+    let status_info: Value = json!({
         "status": "ok",
         "message": "Service is running"
     });
     HttpResponse::Ok().json(status_info)
 }
 
-#[get("/docs")]
-async fn redirect_to_docs() -> impl Responder {
-    HttpResponse::Found()
-        .header("Location", "/docs/index.html")
-        .finish()
+#[post("/")]
+async fn process_file(file_url: web::Json<FileUrl>) -> impl Responder {
+    let port: u16 = get_api_port();
+
+    let client: Client = Client::new();
+    let url: String = format!("http://localhost:{}/proxy/download", port);
+
+    let response: stdResult<Response, Error> = client.post(&url).json(&file_url).send().await;
+
+    match response {
+        Ok(resp) if resp.status().is_success() => match resp.json::<Value>().await {
+            Ok(json_data) => {
+                if let Some(file_path) = json_data.get("file_path").and_then(|v| v.as_str()) {
+                    match csv_to_json(file_path).await {
+                        Ok(json_result) => HttpResponse::Ok().json(json_result),
+                        Err(e) => HttpResponse::InternalServerError()
+                            .body(format!("Error converting CSV to JSON: {}", e)),
+                    }
+                } else {
+                    HttpResponse::InternalServerError()
+                        .body("File path not found in response".to_string())
+                }
+            }
+            Err(e) => HttpResponse::InternalServerError()
+                .body(format!("Error parsing JSON response: {}", e)),
+        },
+        Ok(resp) => HttpResponse::InternalServerError()
+            .body(format!("Error from server: {}", resp.status())),
+        Err(e) => HttpResponse::InternalServerError().body(format!("Request error: {}", e)),
+    }
 }
 
-#[get("/docs/{filename:.*}")]
-async fn serve_docs(path: web::Path<String>) -> impl Responder {
-    let filename = path.into_inner();
-    let file_path = if filename.is_empty() {
-        var("AURORA_DOCS_INDEX_PATH").expect("AURORA_DOCS_INDEX_PATH environment variable not set")
-    } else {
-        format!(
-            "{}/{}",
-            var("AURORA_DOCS_TARGET_PATH")
-                .expect("AURORA_DOCS_TARGET_PATH environment variable not set"),
-            filename
-        )
-    };
-    NamedFile::open_async(file_path).await.unwrap()
-}
-
-#[get("/static.files/{filename:.*}")]
-async fn serve_static_files(path: web::Path<String>) -> impl Responder {
-    let file_path: String = format!(
-        "{}/{}",
-        var("AURORA_DOCS_STATIC_FILES_PATH")
-            .expect("AURORA_DOCS_STATIC_FILES_PATH environment variable not set"),
-        path.into_inner()
-    );
-
-    NamedFile::open_async(file_path).await.unwrap()
-}
 pub async fn api() -> Result<()> {
     dotenv().ok();
-    let port: u16 = var("API_XYLEX_CLOUD_PORT")
-        .unwrap_or("7777".to_string())
-        .parse()
-        .unwrap_or(7777);
-
     let cache: SharedCache = Arc::new(Mutex::new(
         Cache::builder()
             .time_to_live(Duration::from_secs(60))
@@ -99,7 +101,6 @@ pub async fn api() -> Result<()> {
                 }
             })
             // moka cache
-            // dashmap cache
             .app_data(Data::new(cache.clone()))
             // status endpoint
             .service(status)
@@ -107,12 +108,13 @@ pub async fn api() -> Result<()> {
             .service(redirect_to_docs)
             .service(serve_docs)
             .service(serve_static_files)
-
             // proxy
             .service(download_file)
+            // process files at `/`
+            .service(process_file)
     })
     .workers(1)
-    .bind(("0.0.0.0", port))?
+    .bind(("0.0.0.0", get_api_port()))?
     .run()
     .await
 }

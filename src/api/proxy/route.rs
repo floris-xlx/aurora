@@ -1,16 +1,16 @@
 use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
 use mime_guess::mime;
 use reqwest::Client;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs::File;
 use std::io::copy;
 use tracing::info;
 use uuid::Uuid;
 
-#[derive(Deserialize)]
-struct FileUrl {
-    file_url: String,
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct FileUrl {
+    pub file_url: String,
 }
 
 #[post("/proxy/download")]
@@ -26,7 +26,8 @@ async fn download_file(file_url: web::Json<FileUrl>) -> impl Responder {
             HttpResponse::Ok().json(json!({
                 "status": "success",
                 "message": format!("File downloaded to {}", file_path),
-                "file_name": uuid
+                "file_name": uuid,
+                "file_path": file_path 
             }))
         }
         Err(e) => {
@@ -51,7 +52,6 @@ async fn download_to_cache(url: &str, uuid: &str) -> Result<String, Box<dyn std:
     let ext = mime_guess::get_mime_extensions_str(mime_type.as_ref())
         .and_then(|exts| exts.first())
         .unwrap_or(&"bin");
-  
 
     let file_path = format!("./cache/{}.{}", uuid, ext);
     let mut file = File::create(&file_path)?;

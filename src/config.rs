@@ -2,7 +2,8 @@
 //!
 //! This module provides functionality to construct the full path to a script
 //! by combining the script directory, obtained from an environment variable,
-//! with the script name provided as an argument.
+//! with the script name provided as an argument. It also provides a function
+//! to retrieve the API port from an environment variable.
 
 use std::env;
 use tracing::{error, info, warn};
@@ -34,4 +35,18 @@ pub fn script_path(script_name: &str) -> String {
 
     // Construct the script path
     format!("{}/{}", script_dir, script_name)
+}
+
+
+/// Retrieves the API port from the `AURORA_API_PORT` environment variable.
+///
+/// # Returns
+///
+/// A `u16` representing the API port. Defaults to 7777 if the environment
+/// variable is not set or cannot be parsed.
+pub fn get_api_port() -> u16 {
+    env::var("AURORA_API_PORT")
+        .unwrap_or_else(|_| "7777".to_string())
+        .parse()
+        .unwrap_or(7777)
 }
