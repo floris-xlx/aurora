@@ -1,5 +1,4 @@
 use actix_web::{post, web, App, HttpResponse, HttpServer, Responder};
-use mime_guess::from_ext;
 use mime_guess::mime;
 use reqwest::Client;
 use serde::Deserialize;
@@ -16,8 +15,8 @@ struct FileUrl {
 
 #[post("/proxy/download")]
 async fn download_file(file_url: web::Json<FileUrl>) -> impl Responder {
-    let url = file_url.file_url.clone();
-    let uuid = Uuid::new_v4().to_string();
+    let url: String = file_url.file_url.clone();
+    let uuid: String = Uuid::new_v4().to_string();
 
     info!("Starting download for URL: {}", url);
 
@@ -40,9 +39,9 @@ async fn download_file(file_url: web::Json<FileUrl>) -> impl Responder {
 }
 
 async fn download_to_cache(url: &str, uuid: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let client = Client::new();
-    let response = client.get(url).send().await?;
-    let mime_type = response
+    let client: Client = Client::new();
+    let response: reqwest::Response = client.get(url).send().await?;
+    let mime_type: mime::Mime = response
         .headers()
         .get("content-type")
         .and_then(|v| v.to_str().ok())
