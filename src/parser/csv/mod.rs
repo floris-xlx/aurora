@@ -1,8 +1,8 @@
 pub mod headers;
 
 use anyhow::{Context, Result};
-use csv::{ReaderBuilder, Reader, StringRecord};
-use serde_json::{Value, json};
+use csv::{Reader, ReaderBuilder, StringRecord};
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -41,6 +41,7 @@ pub async fn convert_csv_reader_to_json<R: Read>(reader: R) -> Result<Value> {
         .headers()
         .context("Failed to read headers")?
         .clone();
+
     let normalized_headers: csv::StringRecord = normalize_headers(&headers);
     let mut records: Vec<Value> = vec![];
     for result in csv_reader.records() {

@@ -29,7 +29,9 @@ use crate::api::proxy::route::download_file;
 
 // parser::csv
 use crate::api::proxy::route::FileUrl;
-use crate::parser::csv::csv_to_json;
+use crate::parser::csv::{convert_csv_reader_to_json, csv_to_json};
+// parser::bytestream_helper
+use crate::utils::bytestream_helper::read_file_to_bytestream;
 
 /// Define a type alias for the shared cache
 pub type SharedCache = Arc<Mutex<Cache<String, Value>>>;
@@ -52,14 +54,23 @@ async fn process_file(file_url: Json<FileUrl>) -> impl Responder {
     // Use `tokio::try_join!` to parallelize the HTTP request and JSON parsing
     let response = client.post(&url).json(&file_url).send();
     let result = async {
-        let resp = response.await.expect("Failed to send request");
+        let resp: Response = response.await.expect("Failed to send request");
         if resp.status().is_success() {
             let json_data: Value = resp.json().await.expect("Failed to parse JSON");
             if let Some(file_path) = json_data.get("file_path").and_then(|v| v.as_str()) {
-                csv_to_json(file_path).await.map_err(|e| {
-                    HttpResponse::InternalServerError()
-                        .body(format!("Error converting CSV to JSON: {}", e))
-                })
+                // Read the file into a bytestream
+                match read_file_to_bytestream(file_path).await {
+                    Ok(bytestream) => {
+                        // Convert the bytestream to JSON
+                        let reader: std::io::Cursor<Vec<u8>> = std::io::Cursor::new(bytestream);
+                        convert_csv_reader_to_json(reader).await.map_err(|e| {
+                            HttpResponse::InternalServerError()
+                                .body(format!("Error converting CSV to JSON: {}", e))
+                        })
+                    }
+                    Err(e) => Err(HttpResponse::InternalServerError()
+                        .body(format!("Error reading file to bytestream: {}", e))),
+                }
             } else {
                 Err(HttpResponse::InternalServerError()
                     .body("File path not found in response".to_string()))

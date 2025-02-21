@@ -170,3 +170,42 @@ pub mod llm;
 pub mod ocr;
 pub mod parser;
 pub mod utils;
+
+use mime_guess::from_path;
+use serde::Deserialize;
+use std::path::Path;
+use tracing::{error, info};
+
+// crate imports
+use crate::utils::file_extension::get_file_extension;
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct Parser {
+    pub file_url: String,
+    pub file_extension: String,
+    pub file_mime: String,
+}
+
+impl Parser {
+    pub fn new(file_url: String) -> Self {
+        info!("Creating a new Parser instance for file URL: {}", file_url);
+
+        let file_extension: String = get_file_extension(&file_url);
+        if file_extension.is_empty() {
+            error!("Failed to extract file extension from URL: {}", file_url);
+        } else {
+            info!("Extracted file extension: {}", file_extension);
+        }
+
+        let path: &Path = Path::new(&file_url);
+        let file_mime: String = from_path(path).first_or_octet_stream().to_string();
+
+        info!("Determined MIME type: {}", file_mime);
+
+        Parser {
+            file_url,
+            file_extension,
+            file_mime,
+        }
+    }
+}
