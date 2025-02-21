@@ -20,6 +20,8 @@ use tokio::sync::Mutex;
 use tracing_subscriber::EnvFilter;
 use web::Data;
 
+use crate::api::proxy::route::download_file;
+
 /// Define a type alias for the shared cache
 pub type SharedCache = Arc<Mutex<Cache<String, Value>>>;
 
@@ -105,6 +107,9 @@ pub async fn api() -> Result<()> {
             .service(redirect_to_docs)
             .service(serve_docs)
             .service(serve_static_files)
+
+            // proxy
+            .service(download_file)
     })
     .workers(1)
     .bind(("0.0.0.0", port))?

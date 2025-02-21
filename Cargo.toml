@@ -19,6 +19,7 @@ pdfium-render = "0.8.28"
 printpdf = "0.7.0"
 regex = "1.11.1"
 reqwest = "0.12.12"
+serde = { version = "1.0.218", features = ["derive"] }
 serde_json = "1.0.139"
 supabase_rs = "0.4.0"
 tesseract-sys = "0.6.1"
