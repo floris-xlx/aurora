@@ -65,7 +65,7 @@ pub fn determine_document_provider(object: &Value, schemas: &[RevolutPersonalSch
     if !object.is_array() {
         warn!("Provided value is not an array. Marking document provider as Unknown.");
         return json!([{
-            "document_provider": "Unknown",
+            "document_provider": "unknown",
             "data": object
         }]);
     }
@@ -73,7 +73,7 @@ pub fn determine_document_provider(object: &Value, schemas: &[RevolutPersonalSch
     let revolut_keys: HashSet<&str> = SchemaKeys::Revolut.keys();
     let shopify_keys: HashSet<&str> = SchemaKeys::ShopifyOrders.keys();
 
-    let mut document_provider: String = "Unknown".to_string();
+    let mut document_provider: String = "unknown".to_string();
 
     if let Some(array) = object.as_array() {
         for item in array {
@@ -82,13 +82,13 @@ pub fn determine_document_provider(object: &Value, schemas: &[RevolutPersonalSch
                     .keys()
                     .all(|key| revolut_keys.contains(key.as_str()))
                 {
-                    document_provider = "Revolut".to_string();
+                    document_provider = "revolut_csv".to_string();
                     break;
                 } else if obj_map
                     .keys()
                     .all(|key| shopify_keys.contains(key.as_str()))
                 {
-                    document_provider = "ShopifyOrders".to_string();
+                    document_provider = "shopify_orders_csv".to_string();
                     break;
                 }
             }
@@ -113,7 +113,7 @@ pub fn determine_document_provider(object: &Value, schemas: &[RevolutPersonalSch
     if let Some(array) = result.as_array_mut() {
         for item in array {
             if let Some(obj_map) = item.as_object_mut() {
-                let data_value = obj_map.clone();
+                let data_value: Map<String, Value> = obj_map.clone();
                 obj_map.clear();
                 obj_map.insert("data".to_string(), Value::Object(data_value));
                 obj_map.insert(
