@@ -30,3 +30,12 @@ Cargo.lock
 *.doc
 *.pptx
 *.ppt
+*.png
+*.jpg
+*.jpeg
+*.bimp
+*.gif
+*.mov
+*.mp4
+*.pdf
+*.PDF
