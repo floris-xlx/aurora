@@ -52,7 +52,60 @@ To run this project, you will need to add the following environment variables to
 - `AURORA_SCRIPT_DIR` - Optional, if you are extending Aurora with custom implementations but don't want to alter the source code 
 - `POSTGRES_CONNECTION_STRING` - any postgres string will work 
 
+## Build Aurora (Ubuntu 24.xx)
 
+### Leptonica and Tesseract dependencies
+On Ubuntu and derivatives the additional dependencies can be installed by running:
+```sudo apt-get install libleptonica-dev libtesseract-dev clang```
+
+On Fedora 30 the additional dependencies can be installed by running:
+```sudo dnf install leptonica-devel tesseract-devel clang```
+
+On Termux 2019 (Android, Android on Chromebooks) the additional dependencies can be installed by running:
+```pkg install libclang leptonica-dev tesseract-dev```
+
+## Build Aurora (Windows)
+
+On Windows, this library uses Microsoft's `vcpkg` to provide tesseract.
+
+Please install `vcpkg` and set up user wide integration or `vcpkg` crate won't be able to find a library.
+
+To install tesseract
+```
+REM from the vcpkg directory
+
+REM 32 bit
+.\vcpkg install tesseract:x86-windows
+
+REM 64 bit
+.\vcpkg install tesseract:x64-windows
+```
+
+`vcpkg` allows building either dynamically or statically linked application
+
+if you prefer dynamic linking
+```
+SET VCPKGRS_DYNAMIC=true
+```
+
+for statically linked libraries
+
+```
+SET RUSTFLAGS=-Ctarget-feature=+crt-static
+```
+To run the tests please download the English trained data to this directory and set
+
+```
+SET TESSDATA_PREFIX=.
+```
+If you prefer to compile tesseract yourself (Because, for example, you could not get vcpkg to build using clang-cl.exe), you can set these environment variables: TESSERACT_INCLUDE_PATHS, TESSERACT_LINK_PATHS and TESSERACT_LINK_LIBS.
+
+For example:
+```
+set TESSERACT_INCLUDE_PATHS=D:\tesseract\build\include
+set TESSERACT_LINK_PATHS=D:\tesseract\build\lib
+set TESSERACT_LINK_LIBS=tesseract41
+```
 
 ## Run Aurora
 ```bash
@@ -69,6 +122,10 @@ cargo build --release
 # Run Aurora
 cp target/release/aurora aurora && ./aurora
 ```
+
+
+
+
 
 ## Contributing
 
