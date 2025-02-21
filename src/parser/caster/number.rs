@@ -1,6 +1,19 @@
 use serde_json::{Map, Value};
 use tracing::{error, info};
 
+/// Attempts to cast a string value to f64 and updates the JSON value if successful.
+///
+/// # Arguments
+///
+/// * `value` - A mutable reference to a `serde_json::Value` which is expected to be a string.
+pub fn try_cast_to_f64(value: &mut Value) {
+    if let Some(str_value) = value.as_str() {
+        if let Ok(num_value) = str_value.parse::<f64>() {
+            *value = Value::from(num_value);
+        }
+    }
+}
+
 /// Casts the specified keys in a JSON array of objects to f64 and returns the modified JSON.
 ///
 /// # Arguments
@@ -23,40 +36,13 @@ pub fn cast_keys_to_f64(data: &mut Value) -> Value {
 
             let obj_map: &mut Map<String, Value> = obj.as_object_mut().unwrap();
             for key in &["balance", "fee", "amount"] {
-                let value: &mut Value = match obj_map.get_mut(*key) {
-                    Some(v) => v,
-                    None => {
-                        info!(
-                            "Key '{}' not found in object at index {}, skipping.",
-                            key, index
-                        );
-                        continue;
-                    }
-                };
-                let str_value: &str = match value.as_str() {
-                    Some(s) => s,
-                    None => {
-                        error!(
-                            "Value for key '{}' in object at index {} is not a string, skipping.",
-                            key, index
-                        );
-                        continue;
-                    }
-                };
-                match str_value.parse::<f64>() {
-                    Ok(num_value) => {
-                        *value = Value::from(num_value);
-                        info!(
-                            "Successfully casted key '{}' to f64 in object at index {}.",
-                            key, index
-                        );
-                    }
-                    Err(e) => {
-                        error!(
-                            "Failed to parse value '{}' for key '{}' in object at index {}: {:?}",
-                            str_value, key, index, e
-                        );
-                    }
+                if let Some(value) = obj_map.get_mut(*key) {
+                    try_cast_to_f64(value);
+                } else {
+                    info!(
+                        "Key '{}' not found in object at index {}, skipping.",
+                        key, index
+                    );
                 }
             }
         }

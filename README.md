@@ -156,3 +156,24 @@ Aurora is licensed under the MIT License.
 ## Support
 
 For support, email floris@xylex.ai or submit an issue here on github
+
+## Code Statistics (2025-02-22)
+.tsx: 0 lines (0.0%)
+.py: 90 lines (0.5%)
+.jsx: 0 lines (0.0%)
+.ts: 0 lines (0.0%)
+.css: 56 lines (0.3%)
+.json: 2740 lines (16.6%)
+.js: 13637 lines (82.5%)
+Total: 16k lines
+
+
+## Code Statistics (2025-02-22)
+.ts: 0 lines (0.0%)
+.jsx: 0 lines (0.0%)
+.js: 0 lines (0.0%)
+.tsx: 0 lines (0.0%)
+.json: 0 lines (0.0%)
+.py: 90 lines (6.9%)
+.rs: 1209 lines (93.1%)
+Total: 1k lines

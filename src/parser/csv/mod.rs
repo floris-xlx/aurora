@@ -61,8 +61,6 @@ pub async fn convert_csv_reader_to_json<R: Read>(reader: R) -> Result<Value> {
         }
     }
 
-    let casted_records: Value = cast_keys_to_f64(&mut json!(records));
-
     info!("Successfully converted CSV to JSON");
-    Ok(json!(casted_records))
+    Ok(json!(records))
 }

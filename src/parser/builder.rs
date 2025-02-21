@@ -10,6 +10,7 @@ use serde_json::Value;
 use std::io::Cursor;
 use tracing::info;
 
+// crate imports
 use crate::parser::csv::convert_csv_reader_to_json;
 use crate::parser::schema::determine_document_provider;
 use crate::parser::schema::RevolutPersonalSchema;
@@ -30,6 +31,8 @@ pub fn process_json_value(json_value: &mut Value, schemas: &[RevolutPersonalSche
     // First, determine the document provider
     let processed_value: Value = determine_document_provider(json_value, schemas);
 
+    info!("processed_values; {:#?}", processed_value);
+
     // Here you can add additional processing logic if needed
     // For now, we simply return the processed value
     processed_value
@@ -47,7 +50,7 @@ pub fn process_json_value(json_value: &mut Value, schemas: &[RevolutPersonalSche
 pub async fn handle_file_path(file_path: &str) -> HttpResponse {
     match read_file_to_bytestream(file_path).await {
         Ok(bytestream) => {
-            let reader = Cursor::new(bytestream);
+            let reader: Cursor<Vec<u8>> = Cursor::new(bytestream);
             match convert_csv_reader_to_json(reader).await {
                 Ok(json_result) => HttpResponse::Ok().json(json_result),
                 Err(e) => HttpResponse::InternalServerError()
@@ -69,12 +72,15 @@ pub async fn handle_file_path(file_path: &str) -> HttpResponse {
 ///
 /// An `HttpResponse` indicating the result of the operation.
 pub async fn handle_bytestream(content: &Bytes) -> HttpResponse {
-    let reader = Cursor::new(content.clone());
+    let reader: Cursor<Bytes> = Cursor::new(content.clone());
+    // after this function we still are in a Pred-accessor to the `Old` schema that we then cast intot he `Target` schema
+
     match convert_csv_reader_to_json(reader).await {
         Ok(mut json_result) => {
             // Assuming `schemas` is available in the context or passed as an argument
             let schemas: Vec<RevolutPersonalSchema> = vec![]; // Replace with actual schemas
             let processed_value: Value = process_json_value(&mut json_result, &schemas);
+
             HttpResponse::Ok().json(processed_value)
         }
         Err(e) => {
