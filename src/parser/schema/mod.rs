@@ -113,9 +113,6 @@ pub fn determine_document_provider(object: &Value, schemas: &[RevolutPersonalSch
     if let Some(array) = result.as_array_mut() {
         for item in array {
             if let Some(obj_map) = item.as_object_mut() {
-                let data_value: Map<String, Value> = obj_map.clone();
-                obj_map.clear();
-                obj_map.insert("data".to_string(), Value::Object(data_value));
                 obj_map.insert(
                     "document_provider".to_string(),
                     Value::String(document_provider.clone()),

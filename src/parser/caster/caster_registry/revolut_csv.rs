@@ -2,6 +2,7 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::str::FromStr;
+use tracing::info;
 
 use crate::parser::caster::number::try_cast_to_f64;
 use crate::parser::caster::time::try_cast_to_unix;
@@ -14,7 +15,7 @@ use crate::parser::caster::time::try_cast_to_unix;
 ///
 /// # Fields
 ///
-/// * `transaction_type` - A `String` representing the type of the transaction.
+/// * `type` - A `String` representing the type of the transaction.
 /// * `amount` - A `String` representing the amount of the transaction, to be casted to `f64`.
 /// * `balance` - A `String` representing the balance after the transaction, to be casted to `f64`.
 /// * `product` - A `String` representing the product associated with the transaction.
@@ -26,7 +27,7 @@ use crate::parser::caster::time::try_cast_to_unix;
 /// * `description` - A `String` providing a description of the transaction.
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RevolutTransactionOld {
-    pub transaction_type: String,
+    pub document_provider: String,
     pub amount: String,  // To be casted to f64
     pub balance: String, // To be casted to f64
     pub product: String,
@@ -35,36 +36,6 @@ pub struct RevolutTransactionOld {
     pub currency: String,
     pub completed_date: String, // To be casted to i64
     pub fee: String,            // To be casted to f64
-    pub description: String,
-}
-
-/// Represents a transaction in the Revolut system with fields casted to appropriate types.
-///
-/// This struct is used to deserialize and serialize transaction data
-/// from and to JSON format. It includes various fields that describe
-/// the details of a transaction with numeric and date fields casted
-/// to `f64` and `i64` respectively.
-#[derive(Serialize, Deserialize, Debug)]
-pub struct RevolutTransactionTarget {
-    /// A `String` representing the type of the transaction.
-    pub transaction_type: String,
-    /// A `f64` representing the amount of the transaction.
-    pub amount: f64,
-    /// A `f64` representing the balance after the transaction.
-    pub balance: f64,
-    /// A `String` representing the product associated with the transaction.
-    pub product: String,
-    /// A `String` representing the state of the transaction.
-    pub state: String,
-    /// An `i64` representing the date when the transaction started.
-    pub started_date: i64,
-    /// A `String` representing the currency used in the transaction.
-    pub currency: String,
-    /// An `i64` representing the date when the transaction was completed.
-    pub completed_date: i64,
-    /// A `f64` representing the fee associated with the transaction.
-    pub fee: f64,
-    /// A `String` providing a description of the transaction.
     pub description: String,
 }
 
@@ -83,13 +54,13 @@ impl RevolutTransactionOld {
     pub fn to_target(&self) -> Result<RevolutTransactionTarget, String> {
         let mut amount_value: Value = Value::String(self.amount.clone());
         try_cast_to_f64(&mut amount_value);
-        let amount = amount_value
+        let amount: f64 = amount_value
             .as_f64()
             .ok_or("Failed to cast amount to f64")?;
 
         let mut balance_value: Value = Value::String(self.balance.clone());
         try_cast_to_f64(&mut balance_value);
-        let balance = balance_value
+        let balance: f64 = balance_value
             .as_f64()
             .ok_or("Failed to cast balance to f64")?;
 
@@ -99,18 +70,20 @@ impl RevolutTransactionOld {
 
         let mut started_date_value: Value = Value::String(self.started_date.clone());
         try_cast_to_unix(&mut started_date_value);
-        let started_date = started_date_value
+        let started_date: i64 = started_date_value
             .as_i64()
             .ok_or("Failed to cast started_date to i64")?;
 
         let mut completed_date_value: Value = Value::String(self.completed_date.clone());
         try_cast_to_unix(&mut completed_date_value);
-        let completed_date = completed_date_value
+        let completed_date: i64 = completed_date_value
             .as_i64()
             .ok_or("Failed to cast completed_date to i64")?;
 
+        info!("self {:#?}", self);
+
         Ok(RevolutTransactionTarget {
-            transaction_type: self.transaction_type.clone(),
+            document_provider: self.document_provider.clone(),
             amount,
             balance,
             product: self.product.clone(),
@@ -122,4 +95,34 @@ impl RevolutTransactionOld {
             description: self.description.clone(),
         })
     }
+}
+
+/// Represents a transaction in the Revolut system with fields casted to appropriate types.
+///
+/// This struct is used to deserialize and serialize transaction data
+/// from and to JSON format. It includes various fields that describe
+/// the details of a transaction with numeric and date fields casted
+/// to `f64` and `i64` respectively.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct RevolutTransactionTarget {
+    /// A `String` representing the type of the transaction.
+    pub document_provider: String,
+    /// A `f64` representing the amount of the transaction.
+    pub amount: f64,
+    /// A `f64` representing the balance after the transaction.
+    pub balance: f64,
+    /// A `String` representing the product associated with the transaction.
+    pub product: String,
+    /// A `String` representing the state of the transaction.
+    pub state: String,
+    /// An `i64` representing the date when the transaction started.
+    pub started_date: i64,
+    /// A `String` representing the currency used in the transaction.
+    pub currency: String,
+    /// An `i64` representing the date when the transaction was completed.
+    pub completed_date: i64,
+    /// A `f64` representing the fee associated with the transaction.
+    pub fee: f64,
+    /// A `String` providing a description of the transaction.
+    pub description: String,
 }
