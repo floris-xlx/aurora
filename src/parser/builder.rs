@@ -5,7 +5,6 @@
 use actix_web::{web::Bytes, HttpResponse};
 use serde_json::Value;
 use std::io::Cursor;
-use std::os::unix::process;
 use tracing::info;
 
 // crate imports
@@ -14,6 +13,10 @@ use crate::parser::csv::convert_csv_reader_to_json;
 use crate::parser::schema::determine_document_provider;
 use crate::parser::schema::RevolutPersonalSchema;
 use crate::utils::bytestream_helper::read_file_to_bytestream;
+
+// pdf 
+use crate::parser::pdf::output_doc;
+
 
 /// Processes a JSON value by first determining its document provider and then passing it to the appropriate handler.
 ///
@@ -78,6 +81,8 @@ pub async fn handle_file_path(file_path: &str) -> HttpResponse {
     }
 }
 
+use std::io::Read; // Import the Read trait for read_exact method
+
 /// Handles the processing of a bytestream.
 ///
 /// # Arguments
@@ -88,19 +93,31 @@ pub async fn handle_file_path(file_path: &str) -> HttpResponse {
 ///
 /// An `HttpResponse` indicating the result of the operation.
 pub async fn handle_bytestream(content: &Bytes) -> HttpResponse {
-    let reader: Cursor<Bytes> = Cursor::new(content.clone());
-    // after this function we still are in a Pred-accessor to the `Old` schema that we then cast intot he `Target` schema
+    let mut reader = Cursor::new(content.clone());
 
-    match convert_csv_reader_to_json(reader).await {
-        Ok(mut json_result) => {
-            // Assuming `schemas` is available in the context or passed as an argument
-            let schemas: Vec<RevolutPersonalSchema> = vec![]; // Replace with actual schemas
-            let processed_value: Value = process_json_value(&mut json_result, &schemas).await;
+    // Determine if the content is a CSV by checking the first few bytes for a CSV header
+    let is_csv: bool = {
+        let mut buf: [u8; 4] = [0; 4];
+        reader.read_exact(&mut buf).is_ok() && buf.starts_with(b"\"") // Simple check for CSV
+    };
 
-            HttpResponse::Ok().json(processed_value)
+    if is_csv {
+        match convert_csv_reader_to_json(reader).await {
+            Ok(mut json_result) => {
+                // Assuming `schemas` is available in the context or passed as an argument
+                let schemas: Vec<RevolutPersonalSchema> = vec![]; // Replace with actual schemas
+                let processed_value: Value = process_json_value(&mut json_result, &schemas).await;
+
+                HttpResponse::Ok().json(processed_value)
+            }
+            Err(e) => {
+                HttpResponse::InternalServerError().body(format!("Error converting CSV to JSON: {}", e))
+            }
         }
-        Err(e) => {
-            HttpResponse::InternalServerError().body(format!("Error converting CSV to JSON: {}", e))
+    } else {
+        match output_doc("./cache/Financieel_Overzicht_2024.pdf").await {
+            Ok(pages_text) => HttpResponse::Ok().json(pages_text),
+            Err(e) => HttpResponse::InternalServerError().body(format!("Error processing PDF: {}", e)),
         }
     }
 }

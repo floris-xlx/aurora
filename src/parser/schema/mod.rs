@@ -6,6 +6,7 @@ use tracing::{info, warn};
 pub enum SchemaKeys {
     Revolut,
     ShopifyOrders,
+    AbnAmroFinancialYearOVerviewDutch,
 }
 
 impl SchemaKeys {
@@ -35,6 +36,27 @@ impl SchemaKeys {
                 "line_items",
                 "shipping_address",
                 "billing_address",
+            ]
+            .into_iter()
+            .collect(),
+            SchemaKeys::AbnAmroFinancialYearOVerviewDutch => vec![
+                "betreft",
+                "abn_amro_financieel_jaaroverzicht",
+                "betalen_en_sparen",
+                "rekeningnummer",
+                "direct_sparen",
+                "studentenlimiet",
+                "bank",
+                "servicedesk",
+                "antwoordnummer",
+                "referentienummer",
+                "saldo_31_12_2023",
+                "datum",
+                "saldo_31_12_2024",
+                "ontvangen_rente",
+                "aantal_paginas",
+                "pagina",
+                "betaalde_rente",
             ]
             .into_iter()
             .collect(),
@@ -72,6 +94,7 @@ pub fn determine_document_provider(object: &Value, schemas: &[RevolutPersonalSch
 
     let revolut_keys: HashSet<&str> = SchemaKeys::Revolut.keys();
     let shopify_keys: HashSet<&str> = SchemaKeys::ShopifyOrders.keys();
+    let abn_amro_keys: HashSet<&str> = SchemaKeys::AbnAmroFinancialYearOVerviewDutch.keys();
 
     let mut document_provider: String = "unknown".to_string();
 
@@ -89,6 +112,12 @@ pub fn determine_document_provider(object: &Value, schemas: &[RevolutPersonalSch
                     .all(|key| shopify_keys.contains(key.as_str()))
                 {
                     document_provider = "shopify_orders_csv".to_string();
+                    break;
+                } else if obj_map
+                    .keys()
+                    .all(|key| abn_amro_keys.contains(key.as_str()))
+                {
+                    document_provider = "abn_amro_financial_year_overview_dutch".to_string();
                     break;
                 }
             }
