@@ -96,10 +96,12 @@ pub async fn handle_bytestream(content: &Bytes) -> HttpResponse {
     let mut reader = Cursor::new(content.clone());
 
     // Determine if the content is a CSV by checking the first few bytes for a CSV header
-    let is_csv: bool = {
-        let mut buf: [u8; 4] = [0; 4];
-        reader.read_exact(&mut buf).is_ok() && buf.starts_with(b"\"") // Simple check for CSV
-    };
+    // let is_csv: bool = {
+    //     let mut buf: [u8; 4] = [0; 4];
+    //     reader.read_exact(&mut buf).is_ok() && buf.starts_with(b"\"") // Simple check for CSV
+    // };
+
+    let is_csv: bool = true; // For testing purposes, we assume it's a CSV
 
     if is_csv {
         match convert_csv_reader_to_json(reader).await {
